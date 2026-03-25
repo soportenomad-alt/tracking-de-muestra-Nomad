@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nomad Genetics | Tracking de pruebas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <video class="hero-video" autoplay muted loop playsinline preload="auto">
+        <source src="hero-video.mp4" type="video/mp4">
+      </video>
+      <div class="hero-overlay"></div>
+      <div class="hero-brand">
+        <div class="brand-mark">
+        <img src="logo.png" alt="Nomad Genetics" class="logo" onerror="this.style.display='none';document.querySelector('.logo-fallback').style.display='flex'" />
+        <div class="logo-fallback">N</div>
+        </div>
+        <div class="hero-text">
+          <p class="eyebrow">Seguimiento inteligente</p>
+          <h1>Tracking de muestras y pruebas</h1>
+          <p class="hero-copy">Registra el caso, marca cada etapa conforme avance la prueba, agrega comentarios por sección y conserva el histórico completo del seguimiento.</p>
+        </div>
+      </div>
+      <div class="hero-badges">
+        <span class="hero-pill">Histórico</span>
+        <span class="hero-pill">Editable</span>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <section class="panel form-panel">
+        <div class="section-head">
+          <div>
+            <h2>Registro de prueba</h2>
+            <p>Captura los datos generales y elige el tipo de muestra para cargar el flujo correcto.</p>
+          </div>
+        </div>
+
+        <form id="caseForm" class="form-grid" autocomplete="off">
+          <label>
+            <span>Número de orden</span>
+            <input id="orderNumber" type="text" placeholder="Ej. 02-2026-00048144" required>
+          </label>
+          <label>
+            <span>Fecha estimada de reporte</span>
+            <input id="eta" type="date">
+          </label>
+          <label>
+            <span>Paciente</span>
+            <input id="patientName" type="text" placeholder="Nombre del paciente" required>
+          </label>
+          <label>
+            <span>Médico / Cuenta</span>
+            <input id="doctor" type="text" placeholder="Ej. Mario / Cuenta responsable">
+          </label>
+          <label>
+            <span>Tipo de muestra</span>
+            <select id="sampleType" required>
+              <option value="">Seleccionar</option>
+              <option value="tejido">Tejido</option>
+              <option value="sangre">Sangre</option>
+            </select>
+          </label>
+          <label>
+            <span>Prueba ingresada</span>
+            <select id="testType" required>
+              <option value="">Primero selecciona tipo de muestra</option>
+            </select>
+          </label>
+          <label>
+            <span>Responsable de edición</span>
+            <input id="editorName" type="text" placeholder="Solo Mario puede editar el track">
+          </label>
+          <label>
+            <span>ID interno / Folio</span>
+            <input id="caseId" type="text" placeholder="Ej. NG-2026-001">
+          </label>
+        </form>
+
+        <div class="card-preview" id="orderPreview">
+          <div class="preview-top">Resumen del caso</div>
+          <div class="preview-grid">
+            <div>
+              <p class="preview-label">Número de orden</p>
+              <strong id="pvOrder">—</strong>
+            </div>
+            <div>
+              <p class="preview-label">Prueba ingresada</p>
+              <strong id="pvTest">—</strong>
+            </div>
+            <div>
+              <p class="preview-label">Fecha estimada</p>
+              <strong id="pvEta">—</strong>
+            </div>
+            <div>
+              <p class="preview-label">Paciente</p>
+              <strong id="pvPatient">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-head stages-head">
+          <div>
+            <h3>Etapas del seguimiento</h3>
+            <p>El flujo cambia según si la muestra es de tejido o sangre. Cada etapa permite comentario y responsable.</p>
+          </div>
+          <span id="editorBadge" class="editor-badge locked">Edición bloqueada</span>
+        </div>
+
+        <div id="flowVisual" class="flow-visual empty-block">Selecciona tipo de muestra para mostrar el track visual.</div>
+        <div id="stagesEditor" class="stages-editor empty-block">Selecciona tipo de muestra para cargar las etapas editables.</div>
+
+        <div class="action-row">
+          <button id="saveBtn" class="btn primary" type="button">Guardar seguimiento</button>
+          <button id="resetBtn" class="btn secondary" type="button">Limpiar</button>
+        </div>
+      </section>
+
+      <section class="panel records-panel">
+        <div class="section-head records-head">
+          <div>
+            <h2>Histórico de pruebas</h2>
+            <p>Abre un caso para seguirlo actualizando o revisar todo el historial de comentarios.</p>
+          </div>
+          <input id="searchInput" class="search" type="search" placeholder="Buscar por orden, paciente o prueba">
+        </div>
+        <div id="recordsList" class="records-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="stageTemplate">
+    <article class="stage-card">
+      <div class="stage-title-row">
+        <label class="toggle-wrap">
+          <input class="stage-check" type="checkbox">
+          <span class="toggle-dot"></span>
+        </label>
+        <div>
+          <h4 class="stage-title"></h4>
+          <p class="stage-desc"></p>
+        </div>
+      </div>
+      <div class="stage-grid">
+        <label>
+          <span>Fecha</span>
+          <input class="stage-date" type="date">
+        </label>
+        <label>
+          <span>Responsable</span>
+          <input class="stage-owner" type="text" placeholder="Mario / área responsable">
+        </label>
+      </div>
+      <label>
+        <span>Comentario de esta etapa</span>
+        <textarea class="stage-comment" rows="3" placeholder="Anota lo sucedido en este punto..."></textarea>
+      </label>
+    </article>
+  </template>
+
+  <template id="recordTemplate">
+    <article class="record-card">
+      <div class="record-header">
+        <div>
+          <div class="record-tags">
+            <span class="tag sample-tag"></span>
+            <span class="tag test-tag"></span>
+          </div>
+          <h3 class="record-name"></h3>
+          <p class="record-meta"></p>
+        </div>
+        <div class="record-actions">
+          <button class="btn secondary small open-record">Abrir</button>
+          <button class="btn danger small delete-record">Eliminar</button>
+        </div>
+      </div>
+      <div class="mini-track-wrap">
+        <div class="mini-track"></div>
+      </div>
+      <div class="history-list"></div>
+      <div class="record-footer"></div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
