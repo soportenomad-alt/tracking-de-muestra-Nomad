@@ -1,0 +1,33 @@
+Cambios aplicados con base en el documento de comentarios:
+
+1) SOBRE LA MUESTRA
+- Se agrego tipo de muestra: Sangre, Tejido y Tejido y sangre.
+- Se actualizo el catalogo de pruebas por tipo de muestra.
+- Se agregaron campos dinamicos de fecha:
+  * Sangre -> fecha de colecta
+  * Tejido -> fecha de biopsia
+  * Tejido y sangre -> fecha de biopsia y fecha de toma
+- Se agrego selector de biomarcador para pruebas FoundationOne / Tempus que lo requieren.
+- Se agrego selector de algoritmo para pruebas Tempus que lo requieren.
+
+2) SOBRE EL RESUMEN DE CASO
+- Se agrego campo Medico solicitante.
+- Se agrego tipo de pago: Aseguradora / De bolsillo.
+- Ambos aparecen tambien en el resumen del caso.
+
+3) SOBRE EL TRACKING
+- Se sustituyo el check por un selector de estatus por etapa.
+- En todas las etapas existe la opcion Cancelada.
+- Muestra entregada: Completada / Retraso de aduana / Cancelada.
+- Pruebas en curso: En curso / Se solicita nueva muestra / Cancelada.
+- Informe: Fallido / Entregado / Cancelada.
+
+4) HISTORICO
+- El historico ahora muestra el estatus de cada etapa.
+- Tambien refleja biomarcador, algoritmo y fechas capturadas.
+
+Nota:
+- El guardado sigue siendo local en navegador (localStorage), igual que la version original.
+
+- Biomarcador y Algoritmo ahora permiten selección múltiple.
+- Se ajustó la etiqueta de "Médico / Cuenta" a "Implanta, KAM / Cuenta".

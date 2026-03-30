@@ -1,28 +1,110 @@
-const STORAGE_KEY = 'nomad_tracker_v3';
+const STORAGE_KEY = 'nomad_tracker_v5';
+
+const BIOMARKERS_BY_FAMILY = {
+  foundationone: ['PD-L1'],
+  tempus: ['PD-L1 22C3', 'PD-L1 SP142', 'PD-L1 SP263', 'PD-L1 28-8', 'MMR', 'HER2 + FISH', 'FOLR1', 'CLDN18 FDA', 'MGMT Methylation', '1p19q FISH', 'c-Met FDA']
+};
+
+const ALGORITHMS_TEMPUS = ['HRD', 'DPYD', 'UGT1A1', 'Tumor Origin', 'Immune Profile Score'];
 
 const FLOW_BY_SAMPLE = {
+  sangre: {
+    label: 'Sangre',
+    dateFields: [
+      { id: 'sampleDate1', label: 'Fecha de colecta' }
+    ],
+    tests: [
+      { value: 'FoundationOne Liquid CDx', biomarkerGroup: null, algorithm: false },
+      { value: 'Tempus xF', biomarkerGroup: null, algorithm: false },
+      { value: 'Tempus xF+', biomarkerGroup: null, algorithm: false },
+      { value: 'Invitae Multicancer Panel', biomarkerGroup: null, algorithm: false },
+      { value: 'Guardant Reveal', biomarkerGroup: null, algorithm: false },
+      { value: 'Guardant 360', biomarkerGroup: null, algorithm: false }
+    ],
+    stages: [
+      { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
+      { id: 'transito', title: 'Muestra en tránsito', desc: 'La muestra se encuentra en recolección o traslado.' },
+      { id: 'entregada', title: 'Muestra entregada', desc: 'Confirmación de recepción o avance logístico de la muestra.' },
+      { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra o solicita acción adicional.' },
+      { id: 'informe', title: 'Informe', desc: 'Estado final de liberación del resultado.' }
+    ]
+  },
   tejido: {
-    tests: ['Foundation One Heme', 'Foundation One CDx', 'Her2', 'Tempus xT'],
+    label: 'Tejido',
+    dateFields: [
+      { id: 'sampleDate1', label: 'Fecha de biopsia' }
+    ],
+    tests: [
+      { value: 'FoundationOne CDx', biomarkerGroup: 'foundationone', algorithm: false },
+      { value: 'FoundationOne CDx HEME', biomarkerGroup: 'foundationone', algorithm: false },
+      { value: 'Tempus xT', biomarkerGroup: 'tempus', algorithm: true }
+    ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
       { id: 'patologia', title: 'Muestra en patología', desc: 'Patología valida calidad, cantidad y viabilidad del material.' },
-      { id: 'entregada', title: 'Muestra entregada', desc: 'La muestra quedó formalmente preparada o entregada para continuar.' },
-      { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra y se sigue la fecha estimada.' },
-      { id: 'listo', title: 'El informe está listo', desc: 'El resultado final fue liberado y compartido.' }
+      { id: 'entregada', title: 'Muestra entregada', desc: 'Confirmación de recepción o avance logístico de la muestra.' },
+      { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra o solicita acción adicional.' },
+      { id: 'informe', title: 'Informe', desc: 'Estado final de liberación del resultado.' }
     ]
   },
-  sangre: {
-    tests: ['Foundation Liquid', 'Tempus xT + xR', 'Tempus xF', 'Tempus xF+', 'Invitae'],
+  tejido_sangre: {
+    label: 'Tejido y sangre',
+    dateFields: [
+      { id: 'sampleDate1', label: 'Fecha de biopsia' },
+      { id: 'sampleDate2', label: 'Fecha de toma' }
+    ],
+    tests: [
+      { value: 'Tempus xT + Xr (Normal Match)', biomarkerGroup: 'tempus', algorithm: true }
+    ],
     stages: [
-      { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue capturada y quedó lista para operar.' },
-      { id: 'transito', title: 'Muestra en tránsito', desc: 'La muestra se encuentra en recolección o traslado.' },
-      { id: 'entregada', title: 'Muestra entregada', desc: 'El laboratorio confirmó la recepción física.' },
-      { id: 'curso', title: 'Pruebas en curso', desc: 'La muestra ya está en proceso analítico.' },
-      { id: 'listo', title: 'El informe está listo', desc: 'El reporte final fue liberado.' }
+      { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
+      { id: 'patologia', title: 'Muestra en patología', desc: 'Patología valida la muestra de tejido y el soporte del caso.' },
+      { id: 'entregada', title: 'Muestra entregada', desc: 'Confirmación de recepción o avance logístico de las muestras.' },
+      { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra o solicita acción adicional.' },
+      { id: 'informe', title: 'Informe', desc: 'Estado final de liberación del resultado.' }
     ]
   }
 };
 
+const STAGE_STATUS_OPTIONS = {
+  default: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
+  pedido: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'completada', label: 'Completada' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
+  transito: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'en_transito', label: 'En tránsito' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
+  patologia: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'en_revision', label: 'En revisión' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
+  entregada: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'completada', label: 'Completada' },
+    { value: 'retraso_aduana', label: 'Retraso de aduana' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
+  curso: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'en_curso', label: 'En curso' },
+    { value: 'nueva_muestra', label: 'Se solicita nueva muestra' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
+  informe: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'fallido', label: 'Fallido' },
+    { value: 'entregado', label: 'Entregado' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ]
+};
 
 const STAGE_ICONS = {
   pedido: '🛒',
@@ -30,19 +112,23 @@ const STAGE_ICONS = {
   patologia: '🔬',
   entregada: '🧾',
   curso: '🧪',
-  listo: '🏁'
+  informe: '📄'
 };
-function iconForStage(stageId){
-  return STAGE_ICONS[stageId] || '•';
-}
 
 const els = {
   orderNumber: document.getElementById('orderNumber'),
   eta: document.getElementById('eta'),
   patientName: document.getElementById('patientName'),
   doctor: document.getElementById('doctor'),
+  requestingDoctor: document.getElementById('requestingDoctor'),
+  paymentType: document.getElementById('paymentType'),
   sampleType: document.getElementById('sampleType'),
   testType: document.getElementById('testType'),
+  biomarker: document.getElementById('biomarker'),
+  algorithm: document.getElementById('algorithm'),
+  biomarkerWrap: document.getElementById('biomarkerWrap'),
+  algorithmWrap: document.getElementById('algorithmWrap'),
+  dynamicDates: document.getElementById('dynamicDates'),
   editorName: document.getElementById('editorName'),
   caseId: document.getElementById('caseId'),
   saveBtn: document.getElementById('saveBtn'),
@@ -57,11 +143,65 @@ const els = {
   pvOrder: document.getElementById('pvOrder'),
   pvTest: document.getElementById('pvTest'),
   pvEta: document.getElementById('pvEta'),
-  pvPatient: document.getElementById('pvPatient')
+  pvPatient: document.getElementById('pvPatient'),
+  pvPayment: document.getElementById('pvPayment'),
+  pvDoctor: document.getElementById('pvDoctor')
 };
 
 let editingId = null;
 let records = loadRecords();
+let selectedBiomarkers = [];
+let selectedAlgorithms = [];
+
+function normalizeArrayValue(value){
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) return value.split(/\s*\|\s*/).map(v => v.trim()).filter(Boolean);
+  return [];
+}
+function renderMultiSelect(container, options, selectedValues){
+  const selected = new Set(normalizeArrayValue(selectedValues));
+  container.innerHTML = '';
+  if (!options || !options.length){
+    container.innerHTML = '<div class="multi-select-placeholder">No aplica</div>';
+    return;
+  }
+  const selectedWrap = document.createElement('div');
+  selectedWrap.className = 'multi-selected';
+  if (selected.size){
+    Array.from(selected).forEach(value => {
+      const chip = document.createElement('span');
+      chip.className = 'selected-chip';
+      chip.textContent = value;
+      selectedWrap.appendChild(chip);
+    });
+  } else {
+    selectedWrap.innerHTML = '<span class="multi-select-placeholder">Puedes seleccionar uno o varios.</span>';
+  }
+  const optionsWrap = document.createElement('div');
+  optionsWrap.className = 'multi-select-options';
+  options.forEach(optionText => {
+    const label = document.createElement('label');
+    label.className = 'multi-option';
+    label.innerHTML = `<input type="checkbox" value="${escapeHtml(optionText)}" ${selected.has(optionText) ? 'checked' : ''}> <span>${optionText}</span>`;
+    optionsWrap.appendChild(label);
+  });
+  container.appendChild(selectedWrap);
+  container.appendChild(optionsWrap);
+}
+function getMultiSelectValues(container){
+  return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(input => input.value.trim()).filter(Boolean);
+}
+function bindMultiSelect(container, options, getSelected, onChange){
+  container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener('change', () => {
+      const values = getMultiSelectValues(container);
+      onChange(values);
+      renderMultiSelect(container, options, getSelected());
+      bindMultiSelect(container, options, getSelected, onChange);
+    });
+  });
+}
+
 
 function loadRecords(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
@@ -82,6 +222,16 @@ function formatDate(dateString){
   const date = new Date(dateString + 'T00:00:00');
   return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' }).format(date);
 }
+function titleCaseStatus(value){
+  const map = Object.values(STAGE_STATUS_OPTIONS).flat().reduce((acc, item) => {
+    if (item.value) acc[item.value] = item.label;
+    return acc;
+  }, {});
+  return map[value] || 'Pendiente';
+}
+function iconForStage(stageId){
+  return STAGE_ICONS[stageId] || '•';
+}
 function canEdit(){
   return (els.editorName.value || '').trim().toLowerCase() === 'mario';
 }
@@ -93,11 +243,28 @@ function updateEditorLock(){
     if (!el.classList.contains('stage-view-only')) el.disabled = !editable;
   });
 }
-function updateTestOptions(sampleType){
+function renderDynamicDates(sampleType, values = {}){
+  const config = FLOW_BY_SAMPLE[sampleType];
+  els.dynamicDates.innerHTML = '';
+  if (!config) return;
+  config.dateFields.forEach(field => {
+    const label = document.createElement('label');
+    label.innerHTML = `
+      <span>${field.label}</span>
+      <input id="${field.id}" type="date" value="${escapeHtml(values[field.id] || '')}">
+    `;
+    els.dynamicDates.appendChild(label);
+    const input = label.querySelector('input');
+    input.addEventListener('input', updatePreview);
+    input.addEventListener('change', updatePreview);
+  });
+}
+function updateTestOptions(sampleType, selectedTest = ''){
   const config = FLOW_BY_SAMPLE[sampleType];
   els.testType.innerHTML = '';
   if (!config){
     els.testType.innerHTML = '<option value="">Primero selecciona tipo de muestra</option>';
+    updateAuxiliaryOptions();
     updatePreview();
     return;
   }
@@ -107,11 +274,47 @@ function updateTestOptions(sampleType){
   els.testType.appendChild(defaultOption);
   config.tests.forEach(test => {
     const opt = document.createElement('option');
-    opt.value = test;
-    opt.textContent = test;
+    opt.value = test.value;
+    opt.textContent = test.value;
     els.testType.appendChild(opt);
   });
+  els.testType.value = selectedTest;
+  updateAuxiliaryOptions();
   updatePreview();
+}
+function getSelectedTestConfig(){
+  const config = FLOW_BY_SAMPLE[els.sampleType.value];
+  if (!config) return null;
+  return config.tests.find(test => test.value === els.testType.value) || null;
+}
+function updateAuxiliaryOptions(record = null){
+  const testConfig = getSelectedTestConfig();
+  if (testConfig?.biomarkerGroup){
+    selectedBiomarkers = normalizeArrayValue(record?.biomarkerList?.length ? record.biomarkerList : record?.biomarker);
+    renderMultiSelect(els.biomarker, BIOMARKERS_BY_FAMILY[testConfig.biomarkerGroup] || [], selectedBiomarkers);
+    bindMultiSelect(els.biomarker, BIOMARKERS_BY_FAMILY[testConfig.biomarkerGroup] || [], () => selectedBiomarkers, values => { selectedBiomarkers = values; });
+    els.biomarkerWrap.hidden = false;
+  } else {
+    selectedBiomarkers = [];
+    els.biomarker.innerHTML = '<div class="multi-select-placeholder">No aplica</div>';
+    els.biomarkerWrap.hidden = true;
+  }
+
+  if (testConfig?.algorithm){
+    selectedAlgorithms = normalizeArrayValue(record?.algorithmList?.length ? record.algorithmList : record?.algorithm);
+    renderMultiSelect(els.algorithm, ALGORITHMS_TEMPUS, selectedAlgorithms);
+    bindMultiSelect(els.algorithm, ALGORITHMS_TEMPUS, () => selectedAlgorithms, values => { selectedAlgorithms = values; });
+    els.algorithmWrap.hidden = false;
+  } else {
+    selectedAlgorithms = [];
+    els.algorithm.innerHTML = '<div class="multi-select-placeholder">No aplica</div>';
+    els.algorithmWrap.hidden = true;
+  }
+}
+function computeStageState(stage, currentIndex, index){
+  if (stage.status === 'cancelada') return 'cancelled';
+  if (stage.status && stage.status !== '') return 'done';
+  return index === currentIndex ? 'current' : 'pending';
 }
 function renderFlowVisual(sampleType, previousStages = []){
   const config = FLOW_BY_SAMPLE[sampleType];
@@ -121,13 +324,14 @@ function renderFlowVisual(sampleType, previousStages = []){
     return;
   }
   els.flowVisual.className = 'flow-visual';
-  const completedCount = previousStages.filter(s => s.done).length;
+  const completedCount = previousStages.filter(s => s.status && s.status !== 'cancelada').length;
   const currentIndex = Math.min(completedCount, config.stages.length - 1);
   const fill = config.stages.length > 1 ? ((Math.max(completedCount - 1, 0)) / (config.stages.length - 1)) * 100 : 0;
   els.flowVisual.innerHTML = `
     <div class="flow-track" style="--steps:${config.stages.length}">
       ${config.stages.map((stage, index) => {
-        const state = previousStages[index]?.done ? 'done' : index === currentIndex ? 'current' : 'pending';
+        const data = previousStages[index] || {};
+        const state = computeStageState(data, currentIndex, index);
         return `
           <article class="flow-step ${state}">
             <div class="flow-step-icon-wrap">
@@ -136,12 +340,16 @@ function renderFlowVisual(sampleType, previousStages = []){
             <span class="flow-step-index">Paso ${index + 1}</span>
             <h4 class="flow-step-title">${stage.title}</h4>
             <p class="flow-step-sub">${stage.desc}</p>
+            <span class="flow-step-status-label">${titleCaseStatus(data.status)}</span>
             <span class="flow-dot"></span>
           </article>
         `;
       }).join('')}
       <div class="flow-line"><div class="flow-line-fill" style="width:${fill}%"></div></div>
     </div>`;
+}
+function getStageOptions(stageId){
+  return STAGE_STATUS_OPTIONS[stageId] || STAGE_STATUS_OPTIONS.default;
 }
 function renderStageEditor(sampleType, previousStages = []){
   const config = FLOW_BY_SAMPLE[sampleType];
@@ -158,14 +366,19 @@ function renderStageEditor(sampleType, previousStages = []){
     node.dataset.stageId = stage.id;
     node.querySelector('.stage-title').textContent = stage.title;
     node.querySelector('.stage-desc').textContent = stage.desc;
-    node.querySelector('.stage-check').checked = Boolean(data.done);
     node.querySelector('.stage-date').value = data.date || '';
     node.querySelector('.stage-owner').value = data.owner || '';
     node.querySelector('.stage-comment').value = data.comment || '';
-    node.querySelector('.stage-check').addEventListener('change', () => {
-      renderFlowVisual(sampleType, collectStageData());
+    const statusSelect = node.querySelector('.stage-status');
+    statusSelect.innerHTML = getStageOptions(stage.id).map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+    statusSelect.value = data.status || '';
+    ['change','input'].forEach(evt => {
+      node.querySelectorAll('input, textarea, select').forEach(el => {
+        el.addEventListener(evt, () => {
+          renderFlowVisual(sampleType, collectStageData());
+        });
+      });
     });
-    node.querySelector('.stage-date').addEventListener('change', () => renderFlowVisual(sampleType, collectStageData()));
     els.stagesEditor.appendChild(node);
   });
   updateEditorLock();
@@ -175,22 +388,31 @@ function collectStageData(){
     id: card.dataset.stageId,
     title: card.querySelector('.stage-title').textContent,
     desc: card.querySelector('.stage-desc').textContent,
-    done: card.querySelector('.stage-check').checked,
+    status: card.querySelector('.stage-status').value,
     date: card.querySelector('.stage-date').value,
     owner: card.querySelector('.stage-owner').value.trim(),
     comment: card.querySelector('.stage-comment').value.trim()
   }));
+}
+function getDateFieldValue(id){
+  return document.getElementById(id)?.value || '';
 }
 function updatePreview(){
   els.pvOrder.textContent = els.orderNumber.value.trim() || '—';
   els.pvTest.textContent = els.testType.value || '—';
   els.pvEta.textContent = els.eta.value ? formatDate(els.eta.value) : '—';
   els.pvPatient.textContent = els.patientName.value.trim() || '—';
+  els.pvPayment.textContent = els.paymentType.value || '—';
+  els.pvDoctor.textContent = els.requestingDoctor.value.trim() || '—';
 }
 function clearForm(){
   editingId = null;
   document.getElementById('caseForm').reset();
+  renderDynamicDates('');
   updateTestOptions('');
+  selectedBiomarkers = [];
+  selectedAlgorithms = [];
+  updateAuxiliaryOptions();
   renderFlowVisual('');
   renderStageEditor('');
   updatePreview();
@@ -211,8 +433,18 @@ function upsertRecord(){
     eta: els.eta.value,
     patientName: els.patientName.value.trim(),
     doctor: els.doctor.value.trim(),
+    requestingDoctor: els.requestingDoctor.value.trim(),
+    paymentType: els.paymentType.value,
     sampleType: els.sampleType.value,
     testType: els.testType.value,
+    biomarkerList: els.biomarkerWrap.hidden ? [] : selectedBiomarkers,
+    algorithmList: els.algorithmWrap.hidden ? [] : selectedAlgorithms,
+    biomarker: els.biomarkerWrap.hidden ? '' : selectedBiomarkers.join(' | '),
+    algorithm: els.algorithmWrap.hidden ? '' : selectedAlgorithms.join(' | '),
+    sampleDates: {
+      sampleDate1: getDateFieldValue('sampleDate1'),
+      sampleDate2: getDateFieldValue('sampleDate2')
+    },
     editorName: els.editorName.value.trim(),
     caseId: els.caseId.value.trim(),
     stages: collectStageData(),
@@ -227,8 +459,18 @@ function upsertRecord(){
 }
 function recordMatches(record, term){
   if (!term) return true;
-  const haystack = [record.orderNumber, record.patientName, record.testType, record.sampleType, record.caseId, record.doctor].join(' ').toLowerCase();
+  const haystack = [record.orderNumber, record.patientName, record.testType, record.sampleType, record.caseId, record.doctor, record.requestingDoctor, record.paymentType].join(' ').toLowerCase();
   return haystack.includes(term.toLowerCase());
+}
+function renderSampleDates(record){
+  const config = FLOW_BY_SAMPLE[record.sampleType];
+  if (!config) return '';
+  return config.dateFields
+    .map(field => {
+      const value = record.sampleDates?.[field.id];
+      return value ? `<span class="tag soft-tag">${field.label}: ${formatDate(value)}</span>` : '';
+    })
+    .join('');
 }
 function renderRecords(term=''){
   els.recordsList.innerHTML = '';
@@ -239,32 +481,43 @@ function renderRecords(term=''){
   }
   filtered.forEach(record => {
     const node = els.recordTemplate.content.firstElementChild.cloneNode(true);
-    node.querySelector('.sample-tag').textContent = record.sampleType;
+    node.querySelector('.sample-tag').textContent = FLOW_BY_SAMPLE[record.sampleType]?.label || record.sampleType;
     node.querySelector('.test-tag').textContent = record.testType;
     node.querySelector('.record-name').textContent = record.patientName;
-    node.querySelector('.record-meta').textContent = `${record.orderNumber}${record.caseId ? ` · ${record.caseId}` : ''}${record.eta ? ` · ETA ${formatDate(record.eta)}` : ''}${record.doctor ? ` · ${record.doctor}` : ''}`;
+    node.querySelector('.record-meta').textContent = `${record.orderNumber}${record.caseId ? ` · ${record.caseId}` : ''}${record.eta ? ` · ETA ${formatDate(record.eta)}` : ''}${record.requestingDoctor ? ` · Médico solicitante: ${record.requestingDoctor}` : ''}${record.paymentType ? ` · ${record.paymentType}` : ''}`;
+
+    const extraTags = node.querySelector('.extra-tags');
+    const biomarkerText = normalizeArrayValue(record.biomarkerList?.length ? record.biomarkerList : record.biomarker).join(', ');
+    const algorithmText = normalizeArrayValue(record.algorithmList?.length ? record.algorithmList : record.algorithm).join(', ');
+    if (biomarkerText) {
+      extraTags.insertAdjacentHTML('beforeend', `<span class="tag soft-tag">Biomarcador: ${escapeHtml(biomarkerText)}</span>`);
+    }
+    if (algorithmText) {
+      extraTags.insertAdjacentHTML('beforeend', `<span class="tag soft-tag">Algoritmo: ${escapeHtml(algorithmText)}</span>`);
+    }
+    extraTags.insertAdjacentHTML('beforeend', renderSampleDates(record));
 
     const miniTrack = node.querySelector('.mini-track');
-    const doneCount = record.stages.filter(s => s.done).length;
+    const doneCount = record.stages.filter(s => s.status && s.status !== 'cancelada').length;
     const currentIndex = Math.min(doneCount, record.stages.length - 1);
     record.stages.forEach((stage, index) => {
       const step = document.createElement('div');
-      const state = stage.done ? 'done' : index === currentIndex ? 'current' : 'pending';
+      const state = computeStageState(stage, currentIndex, index);
       step.className = `mini-step ${state}`;
       step.innerHTML = `
         <p class="mini-step-title">${stage.title}</p>
-        <p class="mini-step-meta">${stage.date ? formatDate(stage.date) : 'Pendiente'}${stage.owner ? ` · ${escapeHtml(stage.owner)}` : ''}</p>
+        <p class="mini-step-meta">${titleCaseStatus(stage.status)}${stage.date ? ` · ${formatDate(stage.date)}` : ''}${stage.owner ? ` · ${escapeHtml(stage.owner)}` : ''}</p>
       `;
       miniTrack.appendChild(step);
     });
 
     const historyList = node.querySelector('.history-list');
-    record.stages.filter(stage => stage.comment || stage.done || stage.date || stage.owner).forEach(stage => {
+    record.stages.filter(stage => stage.comment || stage.status || stage.date || stage.owner).forEach(stage => {
       const item = document.createElement('div');
       item.className = 'history-item';
       item.innerHTML = `
         <p class="history-item-title">${stage.title}</p>
-        <p class="history-item-meta">${stage.date ? formatDate(stage.date) : 'Sin fecha'}${stage.owner ? ` · ${escapeHtml(stage.owner)}` : ''}${stage.done ? ' · Etapa completada' : ''}</p>
+        <p class="history-item-meta">${titleCaseStatus(stage.status)}${stage.date ? ` · ${formatDate(stage.date)}` : ''}${stage.owner ? ` · ${escapeHtml(stage.owner)}` : ''}</p>
         ${stage.comment ? `<div class="history-comment">${escapeHtml(stage.comment)}</div>` : ''}
       `;
       historyList.appendChild(item);
@@ -288,9 +541,12 @@ function openRecord(id){
   els.eta.value = record.eta || '';
   els.patientName.value = record.patientName || '';
   els.doctor.value = record.doctor || '';
+  els.requestingDoctor.value = record.requestingDoctor || '';
+  els.paymentType.value = record.paymentType || '';
   els.sampleType.value = record.sampleType || '';
-  updateTestOptions(record.sampleType || '');
-  els.testType.value = record.testType || '';
+  renderDynamicDates(record.sampleType || '', record.sampleDates || {});
+  updateTestOptions(record.sampleType || '', record.testType || '');
+  updateAuxiliaryOptions(record);
   els.editorName.value = record.editorName || '';
   els.caseId.value = record.caseId || '';
   updatePreview();
@@ -308,23 +564,29 @@ function deleteRecord(id){
   if (editingId === id) clearForm();
 }
 
-['orderNumber','eta','patientName','doctor','testType'].forEach(key => {
+['orderNumber','eta','patientName','doctor','requestingDoctor','paymentType','testType'].forEach(key => {
   els[key].addEventListener('input', updatePreview);
   els[key].addEventListener('change', updatePreview);
 });
 els.sampleType.addEventListener('change', e => {
+  renderDynamicDates(e.target.value);
   updateTestOptions(e.target.value);
   renderFlowVisual(e.target.value, []);
   renderStageEditor(e.target.value, []);
 });
+els.testType.addEventListener('change', () => {
+  updateAuxiliaryOptions();
+  updatePreview();
+});
 els.editorName.addEventListener('input', updateEditorLock);
-els.testType.addEventListener('change', updatePreview);
 els.saveBtn.addEventListener('click', upsertRecord);
 els.resetBtn.addEventListener('click', clearForm);
 els.searchInput.addEventListener('input', e => renderRecords(e.target.value.trim()));
 
 updatePreview();
+renderDynamicDates('');
 updateTestOptions('');
+updateAuxiliaryOptions();
 renderFlowVisual('');
 renderStageEditor('');
 renderRecords();

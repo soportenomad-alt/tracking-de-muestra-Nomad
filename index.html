@@ -56,15 +56,28 @@
             <input id="patientName" type="text" placeholder="Nombre del paciente" required>
           </label>
           <label>
-            <span>Médico / Cuenta</span>
-            <input id="doctor" type="text" placeholder="Ej. Mario / Cuenta responsable">
+            <span>Implanta, KAM / Cuenta</span>
+            <input id="doctor" type="text" placeholder="Ej. Implanta / KAM / Cuenta responsable">
+          </label>
+          <label>
+            <span>Médico solicitante</span>
+            <input id="requestingDoctor" type="text" placeholder="Nombre del médico solicitante">
+          </label>
+          <label>
+            <span>Tipo de pago</span>
+            <select id="paymentType">
+              <option value="">Seleccionar</option>
+              <option value="Aseguradora">Aseguradora</option>
+              <option value="De bolsillo">De bolsillo</option>
+            </select>
           </label>
           <label>
             <span>Tipo de muestra</span>
             <select id="sampleType" required>
               <option value="">Seleccionar</option>
-              <option value="tejido">Tejido</option>
               <option value="sangre">Sangre</option>
+              <option value="tejido">Tejido</option>
+              <option value="tejido_sangre">Tejido y sangre</option>
             </select>
           </label>
           <label>
@@ -73,6 +86,18 @@
               <option value="">Primero selecciona tipo de muestra</option>
             </select>
           </label>
+
+          <div id="dynamicDates" class="dynamic-fields"></div>
+
+          <label id="biomarkerWrap" hidden>
+            <span>Biomarcador</span>
+            <div id="biomarker" class="multi-select-box"></div>
+          </label>
+          <label id="algorithmWrap" hidden>
+            <span>Algoritmo</span>
+            <div id="algorithm" class="multi-select-box"></div>
+          </label>
+
           <label>
             <span>Responsable de edición</span>
             <input id="editorName" type="text" placeholder="Solo Mario puede editar el track">
@@ -85,7 +110,7 @@
 
         <div class="card-preview" id="orderPreview">
           <div class="preview-top">Resumen del caso</div>
-          <div class="preview-grid">
+          <div class="preview-grid preview-grid-3">
             <div>
               <p class="preview-label">Número de orden</p>
               <strong id="pvOrder">—</strong>
@@ -102,13 +127,21 @@
               <p class="preview-label">Paciente</p>
               <strong id="pvPatient">—</strong>
             </div>
+            <div>
+              <p class="preview-label">Tipo de pago</p>
+              <strong id="pvPayment">—</strong>
+            </div>
+            <div>
+              <p class="preview-label">Médico solicitante</p>
+              <strong id="pvDoctor">—</strong>
+            </div>
           </div>
         </div>
 
         <div class="section-head stages-head">
           <div>
             <h3>Etapas del seguimiento</h3>
-            <p>El flujo cambia según si la muestra es de tejido o sangre. Cada etapa permite comentario y responsable.</p>
+            <p>El flujo cambia según el tipo de muestra. Cada etapa permite estatus, fecha, responsable y comentario.</p>
           </div>
           <span id="editorBadge" class="editor-badge locked">Edición bloqueada</span>
         </div>
@@ -138,16 +171,17 @@
   <template id="stageTemplate">
     <article class="stage-card">
       <div class="stage-title-row">
-        <label class="toggle-wrap">
-          <input class="stage-check" type="checkbox">
-          <span class="toggle-dot"></span>
-        </label>
+        <div class="stage-icon-pill">•</div>
         <div>
           <h4 class="stage-title"></h4>
           <p class="stage-desc"></p>
         </div>
       </div>
-      <div class="stage-grid">
+      <div class="stage-grid stage-grid-3">
+        <label>
+          <span>Estatus</span>
+          <select class="stage-status"></select>
+        </label>
         <label>
           <span>Fecha</span>
           <input class="stage-date" type="date">
@@ -172,6 +206,7 @@
             <span class="tag sample-tag"></span>
             <span class="tag test-tag"></span>
           </div>
+          <div class="record-tags extra-tags"></div>
           <h3 class="record-name"></h3>
           <p class="record-meta"></p>
         </div>
