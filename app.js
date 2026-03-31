@@ -23,8 +23,8 @@ const FLOW_BY_SAMPLE = {
     ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
-      { id: 'transito', title: 'Muestra en tránsito', desc: 'La muestra se encuentra en recolección o traslado.' },
-      { id: 'entregada', title: 'Muestra entregada', desc: 'Confirmación de recepción o avance logístico de la muestra.' },
+      { id: 'validacion', title: 'Validación', desc: 'Se valida la calidad, cantidad y viabilidad de la muestra o del material recibido.' },
+      { id: 'transito', title: 'Muestra en tránsito', desc: 'Seguimiento logístico de la muestra: en tránsito o entregada.' },
       { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra o solicita acción adicional.' },
       { id: 'informe', title: 'Informe', desc: 'Estado final de liberación del resultado.' }
     ]
@@ -41,8 +41,8 @@ const FLOW_BY_SAMPLE = {
     ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
-      { id: 'patologia', title: 'Muestra en patología', desc: 'Patología valida calidad, cantidad y viabilidad del material.' },
-      { id: 'entregada', title: 'Muestra entregada', desc: 'Confirmación de recepción o avance logístico de la muestra.' },
+      { id: 'validacion', title: 'Validación', desc: 'Se valida la calidad, cantidad y viabilidad del material.' },
+      { id: 'transito', title: 'Muestra en tránsito', desc: 'Seguimiento logístico de la muestra: en tránsito o entregada.' },
       { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra o solicita acción adicional.' },
       { id: 'informe', title: 'Informe', desc: 'Estado final de liberación del resultado.' }
     ]
@@ -58,8 +58,8 @@ const FLOW_BY_SAMPLE = {
     ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
-      { id: 'patologia', title: 'Muestra en patología', desc: 'Patología valida la muestra de tejido y el soporte del caso.' },
-      { id: 'entregada', title: 'Muestra entregada', desc: 'Confirmación de recepción o avance logístico de las muestras.' },
+      { id: 'validacion', title: 'Validación', desc: 'Se valida la muestra de tejido, sangre y el soporte del caso.' },
+      { id: 'transito', title: 'Muestra en tránsito', desc: 'Seguimiento logístico de las muestras: en tránsito o entregadas.' },
       { id: 'curso', title: 'Pruebas en curso', desc: 'El laboratorio ya trabaja la muestra o solicita acción adicional.' },
       { id: 'informe', title: 'Informe', desc: 'Estado final de liberación del resultado.' }
     ]
@@ -76,26 +76,16 @@ const STAGE_STATUS_OPTIONS = {
     { value: 'completada', label: 'Completada' },
     { value: 'cancelada', label: 'Cancelada' }
   ],
-  transito: [
-    { value: '', label: 'Seleccionar estatus' },
-    { value: 'en_transito', label: 'En tránsito' },
-    { value: 'cancelada', label: 'Cancelada' }
-  ],
-  patologia: [
-    { value: '', label: 'Seleccionar estatus' },
-    { value: 'en_revision', label: 'En revisión' },
-    { value: 'cancelada', label: 'Cancelada' }
-  ],
-  patologia_tejido: [
+  validacion: [
     { value: '', label: 'Seleccionar estatus' },
     { value: 'en_revision', label: 'En revisión' },
     { value: 'valida', label: 'Válida' },
     { value: 'no_valida', label: 'No válida' },
     { value: 'cancelada', label: 'Cancelada' }
   ],
-  entregada: [
+  transito: [
     { value: '', label: 'Seleccionar estatus' },
-    { value: 'completada', label: 'Completada' },
+    { value: 'en_transito', label: 'En tránsito' },
     { value: 'enviada', label: 'Enviada' },
     { value: 'entregada', label: 'Entregada' },
     { value: 'retraso_aduana', label: 'Retraso de aduana' },
@@ -117,9 +107,8 @@ const STAGE_STATUS_OPTIONS = {
 
 const STAGE_ICONS = {
   pedido: '🛒',
+  validacion: '🔬',
   transito: '📦',
-  patologia: '🔬',
-  entregada: '🧾',
   curso: '🧪',
   informe: '📄'
 };
@@ -213,8 +202,74 @@ function bindMultiSelect(container, options, getSelected, onChange){
 
 
 function loadRecords(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    return raw.map(normalizeRecordStages);
+  } catch { return []; }
 }
+
+function normalizeStageForTransit(stage){
+  if (!stage) return null;
+  const normalized = { ...stage };
+  if (normalized.status === 'completada') normalized.status = 'entregada';
+  return normalized;
+}
+
+function normalizeRecordStages(record){
+  const config = FLOW_BY_SAMPLE[record?.sampleType];
+  if (!config || !Array.isArray(record?.stages)) return record;
+
+  const current = record.stages;
+  const oldPattern = current.some(stage => ['patologia', 'entregada'].includes(stage?.id)) || (record.sampleType === 'sangre' && current[1]?.id === 'transito');
+  if (!oldPattern) {
+    return {
+      ...record,
+      stages: config.stages.map((stage, index) => ({ ...stage, ...(current[index] || {}) }))
+    };
+  }
+
+  let migratedStages;
+  if (record.sampleType === 'sangre') {
+    const pedido = current[0] || {};
+    const transitoViejo = current[1] || {};
+    const entregadaVieja = current[2] || {};
+    const curso = current[3] || {};
+    const informe = current[4] || {};
+    const transitoFusionado = normalizeStageForTransit(
+      entregadaVieja.status || entregadaVieja.date || entregadaVieja.owner || entregadaVieja.comment ? entregadaVieja : transitoViejo
+    ) || {};
+    migratedStages = [
+      { ...config.stages[0], ...pedido },
+      { ...config.stages[1] },
+      { ...config.stages[2], ...transitoFusionado },
+      { ...config.stages[3], ...curso },
+      { ...config.stages[4], ...informe }
+    ];
+  } else {
+    const pedido = current[0] || {};
+    const validacionVieja = current[1] || {};
+    const transitoViejo = normalizeStageForTransit(current[2] || {}) || {};
+    const curso = current[3] || {};
+    const informe = current[4] || {};
+    migratedStages = [
+      { ...config.stages[0], ...pedido },
+      { ...config.stages[1], ...validacionVieja },
+      { ...config.stages[2], ...transitoViejo },
+      { ...config.stages[3], ...curso },
+      { ...config.stages[4], ...informe }
+    ];
+  }
+
+  migratedStages = migratedStages.map((stage, index) => ({
+    ...stage,
+    id: config.stages[index].id,
+    title: config.stages[index].title,
+    desc: config.stages[index].desc
+  }));
+
+  return { ...record, stages: migratedStages };
+}
+
 function saveRecords(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
@@ -358,9 +413,6 @@ function renderFlowVisual(sampleType, previousStages = []){
     </div>`;
 }
 function getStageOptions(stageId, sampleType){
-  if (stageId === 'patologia' && sampleType === 'tejido') {
-    return STAGE_STATUS_OPTIONS.patologia_tejido;
-  }
   return STAGE_STATUS_OPTIONS[stageId] || STAGE_STATUS_OPTIONS.default;
 }
 function renderStageEditor(sampleType, previousStages = []){
