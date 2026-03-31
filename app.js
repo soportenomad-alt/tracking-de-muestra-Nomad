@@ -86,9 +86,18 @@ const STAGE_STATUS_OPTIONS = {
     { value: 'en_revision', label: 'En revisión' },
     { value: 'cancelada', label: 'Cancelada' }
   ],
+  patologia_tejido: [
+    { value: '', label: 'Seleccionar estatus' },
+    { value: 'en_revision', label: 'En revisión' },
+    { value: 'valida', label: 'Válida' },
+    { value: 'no_valida', label: 'No válida' },
+    { value: 'cancelada', label: 'Cancelada' }
+  ],
   entregada: [
     { value: '', label: 'Seleccionar estatus' },
     { value: 'completada', label: 'Completada' },
+    { value: 'enviada', label: 'Enviada' },
+    { value: 'entregada', label: 'Entregada' },
     { value: 'retraso_aduana', label: 'Retraso de aduana' },
     { value: 'cancelada', label: 'Cancelada' }
   ],
@@ -348,7 +357,10 @@ function renderFlowVisual(sampleType, previousStages = []){
       <div class="flow-line"><div class="flow-line-fill" style="width:${fill}%"></div></div>
     </div>`;
 }
-function getStageOptions(stageId){
+function getStageOptions(stageId, sampleType){
+  if (stageId === 'patologia' && sampleType === 'tejido') {
+    return STAGE_STATUS_OPTIONS.patologia_tejido;
+  }
   return STAGE_STATUS_OPTIONS[stageId] || STAGE_STATUS_OPTIONS.default;
 }
 function renderStageEditor(sampleType, previousStages = []){
@@ -370,7 +382,7 @@ function renderStageEditor(sampleType, previousStages = []){
     node.querySelector('.stage-owner').value = data.owner || '';
     node.querySelector('.stage-comment').value = data.comment || '';
     const statusSelect = node.querySelector('.stage-status');
-    statusSelect.innerHTML = getStageOptions(stage.id).map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+    statusSelect.innerHTML = getStageOptions(stage.id, sampleType).map(option => `<option value="${option.value}">${option.label}</option>`).join('');
     statusSelect.value = data.status || '';
     ['change','input'].forEach(evt => {
       node.querySelectorAll('input, textarea, select').forEach(el => {
