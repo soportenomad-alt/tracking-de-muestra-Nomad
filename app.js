@@ -1,4 +1,30 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy
+} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
 const STORAGE_KEY = 'nomad_tracker_v5';
+const COLLECTION_NAME = 'tracks';
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyCt-jjPPowg2rWffoz0aeUo6bkhHaisTFg',
+  authDomain: 'tracking-nomad.firebaseapp.com',
+  projectId: 'tracking-nomad',
+  storageBucket: 'tracking-nomad.firebasestorage.app',
+  messagingSenderId: '735736477673',
+  appId: '1:735736477673:web:e016d70bd963141bc0bd78'
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
 const BIOMARKERS_BY_FAMILY = {
   foundationone: ['PD-L1'],
@@ -150,6 +176,7 @@ let editingId = null;
 let records = loadRecords();
 let selectedBiomarkers = [];
 let selectedAlgorithms = [];
+let isSyncing = false;
 
 function normalizeArrayValue(value){
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -200,12 +227,17 @@ function bindMultiSelect(container, options, getSelected, onChange){
   });
 }
 
-
 function loadRecords(){
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     return raw.map(normalizeRecordStages);
-  } catch { return []; }
+  } catch {
+    return [];
+  }
+}
+
+function saveRecordsLocal(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
 
 function normalizeStageForTransit(stage){
@@ -270,9 +302,16 @@ function normalizeRecordStages(record){
   return { ...record, stages: migratedStages };
 }
 
-function saveRecords(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+function hydrateFirestoreRecord(docSnap){
+  const data = docSnap.data() || {};
+  return normalizeRecordStages({
+    ...data,
+    id: docSnap.id,
+    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt || new Date().toISOString()),
+    createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || null)
+  });
 }
+
 function escapeHtml(text){
   return (text || '')
     .replaceAll('&','&amp;')
@@ -412,7 +451,7 @@ function renderFlowVisual(sampleType, previousStages = []){
       <div class="flow-line"><div class="flow-line-fill" style="width:${fill}%"></div></div>
     </div>`;
 }
-function getStageOptions(stageId, sampleType){
+function getStageOptions(stageId){
   return STAGE_STATUS_OPTIONS[stageId] || STAGE_STATUS_OPTIONS.default;
 }
 function renderStageEditor(sampleType, previousStages = []){
@@ -434,7 +473,7 @@ function renderStageEditor(sampleType, previousStages = []){
     node.querySelector('.stage-owner').value = data.owner || '';
     node.querySelector('.stage-comment').value = data.comment || '';
     const statusSelect = node.querySelector('.stage-status');
-    statusSelect.innerHTML = getStageOptions(stage.id, sampleType).map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+    statusSelect.innerHTML = getStageOptions(stage.id).map(option => `<option value="${option.value}">${option.label}</option>`).join('');
     statusSelect.value = data.status || '';
     ['change','input'].forEach(evt => {
       node.querySelectorAll('input, textarea, select').forEach(el => {
@@ -482,7 +521,8 @@ function clearForm(){
   updatePreview();
   updateEditorLock();
 }
-function upsertRecord(){
+
+async function upsertRecord(){
   if (!els.orderNumber.value.trim() || !els.patientName.value.trim() || !els.sampleType.value || !els.testType.value){
     alert('Completa número de orden, paciente, tipo de muestra y prueba.');
     return;
@@ -491,8 +531,11 @@ function upsertRecord(){
     alert('Solo Mario puede editar y guardar el track.');
     return;
   }
+
+  const recordId = editingId || crypto.randomUUID();
+  const existingRecord = records.find(r => r.id === recordId);
   const payload = {
-    id: editingId || crypto.randomUUID(),
+    id: recordId,
     orderNumber: els.orderNumber.value.trim(),
     eta: els.eta.value,
     patientName: els.patientName.value.trim(),
@@ -512,14 +555,21 @@ function upsertRecord(){
     editorName: els.editorName.value.trim(),
     caseId: els.caseId.value.trim(),
     stages: collectStageData(),
-    updatedAt: new Date().toISOString()
+    updatedAt: serverTimestamp(),
+    createdAt: existingRecord?.createdAt || serverTimestamp()
   };
-  const existingIndex = records.findIndex(r => r.id === payload.id);
-  if (existingIndex >= 0) records[existingIndex] = payload; else records.unshift(payload);
-  saveRecords();
-  renderRecords(els.searchInput.value.trim());
-  alert(existingIndex >= 0 ? 'Seguimiento actualizado correctamente.' : 'Seguimiento guardado correctamente.');
-  clearForm();
+
+  try {
+    els.saveBtn.disabled = true;
+    await setDoc(doc(db, COLLECTION_NAME, recordId), payload, { merge: true });
+    alert(existingRecord ? 'Seguimiento actualizado correctamente.' : 'Seguimiento guardado correctamente.');
+    clearForm();
+  } catch (error) {
+    console.error('Error al guardar en Firebase:', error);
+    alert('No se pudo guardar en Firebase. Revisa las reglas y la consola.');
+  } finally {
+    els.saveBtn.disabled = false;
+  }
 }
 function recordMatches(record, term){
   if (!term) return true;
@@ -591,7 +641,8 @@ function renderRecords(term=''){
       historyList.innerHTML = '<div class="empty-message">Todavía no hay movimientos documentados en el histórico.</div>';
     }
 
-    node.querySelector('.record-footer').textContent = `Última actualización: ${new Intl.DateTimeFormat('es-MX',{dateStyle:'medium', timeStyle:'short'}).format(new Date(record.updatedAt))}`;
+    const footerDate = record.updatedAt ? new Date(record.updatedAt) : new Date();
+    node.querySelector('.record-footer').textContent = `Última actualización: ${new Intl.DateTimeFormat('es-MX',{dateStyle:'medium', timeStyle:'short'}).format(footerDate)}`;
     node.querySelector('.open-record').addEventListener('click', () => openRecord(record.id));
     node.querySelector('.delete-record').addEventListener('click', () => deleteRecord(record.id));
     els.recordsList.appendChild(node);
@@ -618,14 +669,36 @@ function openRecord(id){
   renderStageEditor(record.sampleType, record.stages || []);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function deleteRecord(id){
+async function deleteRecord(id){
   const record = records.find(r => r.id === id);
   if (!record) return;
   if (!confirm(`¿Eliminar el seguimiento ${record.orderNumber}?`)) return;
-  records = records.filter(r => r.id !== id);
-  saveRecords();
-  renderRecords(els.searchInput.value.trim());
-  if (editingId === id) clearForm();
+  try {
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
+    if (editingId === id) clearForm();
+  } catch (error) {
+    console.error('Error al eliminar en Firebase:', error);
+    alert('No se pudo eliminar en Firebase. Revisa las reglas y la consola.');
+  }
+}
+
+function subscribeToRecords(){
+  try {
+    const q = query(collection(db, COLLECTION_NAME), orderBy('updatedAt', 'desc'));
+    onSnapshot(q, snapshot => {
+      isSyncing = true;
+      records = snapshot.docs.map(hydrateFirestoreRecord);
+      saveRecordsLocal();
+      renderRecords(els.searchInput.value.trim());
+      isSyncing = false;
+    }, error => {
+      console.error('Error al leer Firebase:', error);
+      renderRecords(els.searchInput.value.trim());
+      alert('No se pudo leer Firebase. Verifica que Firestore esté creado y que las reglas permitan acceso.');
+    });
+  } catch (error) {
+    console.error('Error al inicializar suscripción:', error);
+  }
 }
 
 ['orderNumber','eta','patientName','doctor','requestingDoctor','paymentType','testType'].forEach(key => {
@@ -655,3 +728,4 @@ renderFlowVisual('');
 renderStageEditor('');
 renderRecords();
 updateEditorLock();
+subscribeToRecords();
