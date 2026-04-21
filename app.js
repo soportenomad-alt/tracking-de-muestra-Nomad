@@ -1,4 +1,4 @@
-// Validado contra 'Comentarios Plataforma Track (2).docx'. Este archivo conserva la misma funcionalidad solicitada.
+// Actualizado con 'Comentarios Plataforma Track 21-04-2026.docx'. Conserva la funcionalidad previa y agrega los nuevos paneles Cordex.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {
   getFirestore,
@@ -29,7 +29,8 @@ const db = getFirestore(firebaseApp);
 
 const BIOMARKERS_BY_FAMILY = {
   foundationone: ['PD-L1'],
-  tempus: ['PD-L1 22C3', 'PD-L1 SP142', 'PD-L1 SP263', 'PD-L1 28-8', 'MMR', 'HER2 + FISH', 'FOLR1', 'CLDN18 FDA', 'MGMT Methylation', '1p19q FISH', 'c-Met FDA']
+  tempus: ['PD-L1 22C3', 'PD-L1 SP142', 'PD-L1 SP263', 'PD-L1 28-8', 'MMR', 'HER2 + FISH', 'FOLR1', 'CLDN18 FDA', 'MGMT Methylation', '1p19q FISH', 'c-Met FDA'],
+  cordex: ['PD-L1', 'HER2']
 };
 
 const ALGORITHMS_TEMPUS = ['HRD', 'DPYD', 'UGT1A1', 'Tumor Origin', 'Immune Profile Score'];
@@ -46,7 +47,8 @@ const FLOW_BY_SAMPLE = {
       { value: 'Tempus xF+', biomarkerGroup: null, algorithm: false },
       { value: 'Invitae Multicancer Panel', biomarkerGroup: null, algorithm: false },
       { value: 'Guardant Reveal', biomarkerGroup: null, algorithm: false },
-      { value: 'Guardant 360', biomarkerGroup: null, algorithm: false }
+      { value: 'Guardant 360', biomarkerGroup: null, algorithm: false },
+      { value: 'Cordex 1021 Liquid + PGx', biomarkerGroup: null, algorithm: false }
     ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
@@ -64,7 +66,17 @@ const FLOW_BY_SAMPLE = {
     tests: [
       { value: 'FoundationOne CDx', biomarkerGroup: 'foundationone', algorithm: false },
       { value: 'FoundationOne CDx HEME', biomarkerGroup: 'foundationone', algorithm: false },
-      { value: 'Tempus xT', biomarkerGroup: 'tempus', algorithm: true }
+      { value: 'Tempus xT', biomarkerGroup: 'tempus', algorithm: true },
+      { value: 'Cordex500 xT', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Tiroides', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Mama', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Colorectal', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Pulmón', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Gástrico', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Gastrointestinal', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Vejiga', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Colangiocarcinoma', biomarkerGroup: 'cordex', algorithm: false },
+      { value: 'Cordex40 Endometrio', biomarkerGroup: 'cordex', algorithm: false }
     ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },
@@ -81,7 +93,8 @@ const FLOW_BY_SAMPLE = {
       { id: 'sampleDate2', label: 'Fecha de toma' }
     ],
     tests: [
-      { value: 'Tempus xT + Xr (Normal Match)', biomarkerGroup: 'tempus', algorithm: true }
+      { value: 'Tempus xT + Xr (Normal Match)', biomarkerGroup: 'tempus', algorithm: true },
+      { value: 'Cordex40 Mama + BRCA', biomarkerGroup: 'cordex', algorithm: false }
     ],
     stages: [
       { id: 'pedido', title: 'Servicio pedido', desc: 'La prueba fue registrada y se generó la orden.' },

@@ -1,37 +1,10 @@
-Cambios aplicados con base en el documento de comentarios:
+ACTUALIZACIONES DEL TRACK 21-04-2026
 
-1) SOBRE LA MUESTRA
-- Se agrego tipo de muestra: Sangre, Tejido y Tejido y sangre.
-- Se actualizo el catalogo de pruebas por tipo de muestra.
-- Se agregaron campos dinamicos de fecha:
-  * Sangre -> fecha de colecta
-  * Tejido -> fecha de biopsia
-  * Tejido y sangre -> fecha de biopsia y fecha de toma
-- Se agrego selector de biomarcador para pruebas FoundationOne / Tempus que lo requieren.
-- Se agrego selector de algoritmo para pruebas Tempus que lo requieren.
+Incorporado en la herramienta sin modificar la lógica base:
+- Sangre: agregar Cordex 1021 Liquid + PGx
+- Tejido: agregar Cordex500 xT, Cordex40 Tiroides, Cordex40 Mama, Cordex40 Colorectal, Cordex40 Pulmón, Cordex40 Gástrico, Cordex40 Gastrointestinal, Cordex40 Vejiga, Cordex40 Colangiocarcinoma y Cordex40 Endometrio
+- Biomarcadores para paneles Cordex en Tejido: PD-L1 y HER2
+- Tejido y sangre: agregar Cordex40 Mama + BRCA
+- Biomarcadores para Cordex40 Mama + BRCA: PD-L1 y HER2
 
-2) SOBRE EL RESUMEN DE CASO
-- Se agrego campo Medico solicitante.
-- Se agrego tipo de pago: Aseguradora / De bolsillo.
-- Ambos aparecen tambien en el resumen del caso.
-
-3) SOBRE EL TRACKING
-- Se sustituyo el check por un selector de estatus por etapa.
-- En todas las etapas existe la opcion Cancelada.
-- Muestra entregada: Completada / Retraso de aduana / Cancelada.
-- Pruebas en curso: En curso / Se solicita nueva muestra / Cancelada.
-- Informe: Fallido / Entregado / Cancelada.
-
-4) HISTORICO
-- El historico ahora muestra el estatus de cada etapa.
-- Tambien refleja biomarcador, algoritmo y fechas capturadas.
-
-Nota:
-- El guardado sigue siendo local en navegador (localStorage), igual que la version original.
-
-- Biomarcador y Algoritmo ahora permiten selección múltiple.
-- Se ajustó la etiqueta de "Médico / Cuenta" a "Implanta, KAM / Cuenta".
-
-Validacion adicional:
-- Se verifico contra el archivo "Comentarios Plataforma Track (2).docx" que los cambios solicitados ya estuvieran incorporados en esta version.
-- No se altero Firebase ni se modifico la estructura base del proyecto.
+Fuente: Comentarios Plataforma Track 21-04-2026.docx
