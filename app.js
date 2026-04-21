@@ -1,3 +1,4 @@
+// Validado contra 'Comentarios Plataforma Track (2).docx'. Este archivo conserva la misma funcionalidad solicitada.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {
   getFirestore,

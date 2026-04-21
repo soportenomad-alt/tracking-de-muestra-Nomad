@@ -31,3 +31,7 @@ Nota:
 
 - Biomarcador y Algoritmo ahora permiten selección múltiple.
 - Se ajustó la etiqueta de "Médico / Cuenta" a "Implanta, KAM / Cuenta".
+
+Validacion adicional:
+- Se verifico contra el archivo "Comentarios Plataforma Track (2).docx" que los cambios solicitados ya estuvieran incorporados en esta version.
+- No se altero Firebase ni se modifico la estructura base del proyecto.
