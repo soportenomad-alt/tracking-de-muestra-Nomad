@@ -98,6 +98,12 @@ input:focus,select:focus,textarea:focus{border-color:#77c9e8;box-shadow:0 0 0 4p
 .records-list{display:grid;gap:16px;margin-top:18px}
 .record-card{border:1px solid var(--stroke);border-radius:24px;padding:18px;background:linear-gradient(180deg,#fff,#fbf8f2)}
 .record-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+
+.record-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.record-details{margin-top:14px;padding-top:14px;border-top:1px solid var(--stroke)}
+.record-card.expanded{box-shadow:0 12px 28px rgba(41,109,143,.10)}
+.toggle-record-details::after{content:' ▾';font-size:12px}
+.record-card.expanded .toggle-record-details::after{content:' ▴'}
 .record-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .tag{padding:8px 10px;border-radius:999px;font-size:12px;font-weight:700}
 .sample-tag{background:#eef6f5;color:#2e8478;text-transform:capitalize}

@@ -134,6 +134,7 @@ const STAGE_STATUS_OPTIONS = {
   curso: [
     { value: '', label: 'Seleccionar estatus' },
     { value: 'en_curso', label: 'En curso' },
+    { value: 'completada', label: 'Completada' },
     { value: 'nueva_muestra', label: 'Se solicita nueva muestra' },
     { value: 'cancelada', label: 'Cancelada' }
   ],
@@ -657,6 +658,21 @@ function renderRecords(term=''){
 
     const footerDate = record.updatedAt ? new Date(record.updatedAt) : new Date();
     node.querySelector('.record-footer').textContent = `Última actualización: ${new Intl.DateTimeFormat('es-MX',{dateStyle:'medium', timeStyle:'short'}).format(footerDate)}`;
+
+    const details = node.querySelector('.record-details');
+    const toggleBtn = node.querySelector('.toggle-record-details');
+    const expandedId = `record-details-${record.id}`;
+    details.id = expandedId;
+    toggleBtn.setAttribute('aria-controls', expandedId);
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.addEventListener('click', () => {
+      const isCollapsed = details.hidden;
+      details.hidden = !isCollapsed;
+      node.classList.toggle('expanded', isCollapsed);
+      toggleBtn.setAttribute('aria-expanded', String(isCollapsed));
+      toggleBtn.textContent = isCollapsed ? 'Ocultar seguimiento' : 'Desplegar';
+    });
+
     node.querySelector('.open-record').addEventListener('click', () => openRecord(record.id));
     node.querySelector('.delete-record').addEventListener('click', () => deleteRecord(record.id));
     els.recordsList.appendChild(node);

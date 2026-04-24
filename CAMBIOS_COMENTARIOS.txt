@@ -8,3 +8,9 @@ Incorporado en la herramienta sin modificar la lógica base:
 - Biomarcadores para Cordex40 Mama + BRCA: PD-L1 y HER2
 
 Fuente: Comentarios Plataforma Track 21-04-2026.docx
+
+
+Cambios 24-04-2026:
+- Se agregó el estatus 'Completada' en la etapa 'Pruebas en curso'.
+- El Histórico de pruebas ahora carga contraído por defecto y permite desplegar/ocultar el seguimiento completo por cada prueba.
+- Se conservaron los botones Abrir y Eliminar y no se modificó la configuración de Firebase.
